@@ -2,9 +2,15 @@
 
 Dokku deployment kit for running a personal Vaultwarden instance with secure defaults, repeatable setup, and documented operations.
 
-## Project intent
+## Status
 
-This repository will provide a practical production baseline for Vaultwarden on Dokku:
+This project is in the initial setup phase. The first implementation milestone is a minimal, repeatable Vaultwarden deployment on Dokku with persistent storage, HTTPS, secure runtime defaults, backups, and restore documentation.
+
+Track implementation work in the GitHub issues for this repository.
+
+## Goals
+
+Provide a practical production baseline for Vaultwarden on Dokku:
 
 - Dokku app creation and configuration.
 - Vaultwarden runtime configuration through environment variables.
@@ -14,20 +20,28 @@ This repository will provide a practical production baseline for Vaultwarden on 
 - Backups, restore drills, and operational checklists.
 - Optional host hardening tasks such as fail2ban.
 
-The repo must be safe to publish. No real domains, emails, tokens, SMTP credentials, backup keys, SSH material, or generated secrets should be committed.
+## Repository layout
 
-## Why this name
-
-`vaultwarden-dokku-kit` is clear, searchable, and reusable. It describes the product, target platform, and repo purpose without implying it is an official Vaultwarden project.
-
-## Proposed implementation shape
-
-- `ansible/`: idempotent server and Dokku app automation.
-- `scripts/`: thin operator commands for bootstrap, validation, backup, restore rehearsal, and deploy.
+- `ansible/`: idempotent host and Dokku app automation.
+- `scripts/`: small operator commands for validation, bootstrap, deploy, backup, and restore checks.
 - `docs/`: planning, decisions, and runbooks.
-- `.env.example`: documented variables only, with placeholder values.
+- `.env.example`: documented placeholder values for private configuration.
 
-## Source guidance
+## Security expectations
+
+This repository is intended to be safe for public use. Do not commit:
+
+- Real domains or private hostnames.
+- Email addresses used for production administration.
+- SMTP credentials.
+- Vaultwarden admin tokens.
+- Backup credentials, repository passwords, or encryption keys.
+- SSH keys or production inventory files.
+- Generated secrets or local `.env` files.
+
+Use the example files as templates and keep production values in private configuration.
+
+## References
 
 The implementation should follow the official Vaultwarden wiki and Dokku documentation, especially:
 
