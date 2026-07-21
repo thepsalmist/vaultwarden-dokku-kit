@@ -41,6 +41,10 @@ This repository is intended to be safe for public use. Do not commit:
 
 Use the example files as templates and keep production values in private configuration.
 
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
+
 ## References
 
 The implementation should follow the official Vaultwarden wiki and Dokku documentation, especially:
