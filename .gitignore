@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+
+*.retry
+*.log
+
+ansible/inventory.ini
+ansible/group_vars/
+ansible/host_vars/
+ansible/vault.yml
+ansible/*.vault.yml
+
+backups/
+tmp/
+.cache/
