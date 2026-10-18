@@ -21,8 +21,8 @@ If `ansible-playbook` isn't found afterwards, run `uv tool update-shell` and ope
 Run from this directory, so `ansible.cfg` applies:
 
 ```bash
-ansible-playbook site.yml
-ansible-playbook site.yml --check --diff
+ansible-playbook vaultwarden.yml
+ansible-playbook vaultwarden.yml --check --diff
 ```
 
 ## Preflight
@@ -40,5 +40,5 @@ The host is expected to have been prepared by [ansible-server-bootstrap](https:/
 
 ```bash
 uvx ansible-lint                                    # from the repo root, production profile
-ansible-playbook site.yml --syntax-check            # from this directory
+ansible-playbook vaultwarden.yml --syntax-check     # from this directory
 ```
