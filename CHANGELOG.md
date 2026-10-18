@@ -6,6 +6,11 @@ All notable changes to this project are listed here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Ansible playbook with example inventory and variables, and preflight checks that stop before changing the host when it isn't Ubuntu 22.04/24.04, Dokku or its `postgres`/`letsencrypt` plugins are missing, Let's Encrypt has no global email, or `vaultwarden_domain` isn't set.
+- `scripts/check-prereqs.sh`, which checks the workstation has `ansible-playbook`, `ssh` and `git`.
+
 ### Changed
 
 - PostgreSQL through `dokku-postgres` replaces SQLite as the database.

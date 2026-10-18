@@ -9,7 +9,8 @@
 # Private Ansible files
 ansible/inventory.ini
 ansible/inventory/
-ansible/group_vars/
+ansible/group_vars/*
+!ansible/group_vars/all.yml.example
 ansible/host_vars/
 ansible/vault.yml
 ansible/*.vault.yml
@@ -44,3 +45,4 @@ backups/
 tmp/
 temp/
 .cache/
+.ansible/

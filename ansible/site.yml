@@ -1,0 +1,10 @@
+---
+- name: Deploy Vaultwarden
+  hosts: all
+  become: true
+  vars:
+    ansible_user: "{{ admin_user | mandatory('Set admin_user in group_vars/all.yml to the sudo admin on the host.') }}"
+  pre_tasks:
+    - name: Run preflight checks
+      ansible.builtin.import_tasks: tasks/preflight.yml
+      tags: always
