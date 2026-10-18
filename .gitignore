@@ -1,7 +1,6 @@
 # Environment files
 .env
 .env.*
-!.env.example
 
 # Logs and Ansible retry files
 *.log
