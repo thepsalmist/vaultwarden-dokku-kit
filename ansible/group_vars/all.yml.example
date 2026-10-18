@@ -1,0 +1,8 @@
+---
+# Copy to group_vars/all.yml (gitignored). Keep only placeholders in this file.
+
+# The host's sudo admin, as created by ansible-server-bootstrap. Ansible connects as it.
+admin_user: deploy
+
+# The vault's hostname, without https://. Its DNS record must point at the host.
+vaultwarden_domain: vault.example.com

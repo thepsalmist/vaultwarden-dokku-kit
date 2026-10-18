@@ -1,0 +1,60 @@
+---
+- name: Check the target is a supported Ubuntu release
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == 'Ubuntu'
+      - ansible_facts.distribution_version in ['22.04', '24.04']
+    fail_msg: Supported targets are Ubuntu 22.04/24.04 (the releases Dokku supports).
+    quiet: true
+
+- name: Check the Vaultwarden settings
+  ansible.builtin.assert:
+    that:
+      - vaultwarden_domain | default('') | length > 0
+      - vaultwarden_domain != 'vault.example.com'
+      - vaultwarden_domain is not match('^https?://')
+    fail_msg: Set vaultwarden_domain in group_vars/all.yml to the vault's hostname, without https://.
+    quiet: true
+
+- name: Read Dokku's version
+  ansible.builtin.command: dokku version
+  register: preflight_dokku
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Check Dokku is installed
+  ansible.builtin.assert:
+    that: preflight_dokku.rc == 0
+    fail_msg: Dokku isn't installed. Prepare the host with https://github.com/thepsalmist/ansible-server-bootstrap first.
+    quiet: true
+
+- name: Read the installed Dokku plugins
+  ansible.builtin.command: dokku plugin:list --format json
+  register: preflight_plugins
+  changed_when: false
+  check_mode: false
+
+- name: Check the required Dokku plugins are installed
+  ansible.builtin.assert:
+    that: preflight_missing_plugins | length == 0
+    fail_msg: >-
+      Missing Dokku plugins: {{ preflight_missing_plugins | join(', ') }}.
+      ansible-server-bootstrap installs them, or use dokku plugin:install.
+    quiet: true
+  vars:
+    preflight_missing_plugins: "{{ ['postgres', 'letsencrypt'] | difference(preflight_plugins.stdout | from_json | map(attribute='name')) }}"
+
+- name: Read Let's Encrypt's global settings
+  ansible.builtin.command: dokku letsencrypt:report --global --format json
+  register: preflight_letsencrypt
+  changed_when: false
+  check_mode: false
+
+- name: Check Let's Encrypt has a global email
+  ansible.builtin.assert:
+    that: (preflight_letsencrypt.stdout | from_json)['global-email'] | length > 0
+    fail_msg: >-
+      Let's Encrypt has no global email, so certificates can't be requested.
+      Set dokku_letsencrypt_email in ansible-server-bootstrap, or run dokku letsencrypt:set --global email <address>.
+    quiet: true
