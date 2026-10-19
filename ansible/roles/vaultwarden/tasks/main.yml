@@ -1,0 +1,176 @@
+---
+- name: Read Vaultwarden's database service
+  ansible.builtin.command:
+    argv: [dokku, "postgres:exists", "{{ vaultwarden_db_service }}"]
+  register: vaultwarden_db_exists
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Create Vaultwarden's database service
+  ansible.builtin.command:
+    argv: [dokku, "postgres:create", "{{ vaultwarden_db_service }}"]
+  when: vaultwarden_db_exists.rc != 0
+  changed_when: true
+
+- name: Read Vaultwarden's Dokku app
+  ansible.builtin.command:
+    argv: [dokku, "apps:exists", "{{ vaultwarden_app }}"]
+  register: vaultwarden_app_exists
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Create Vaultwarden's Dokku app
+  ansible.builtin.command:
+    argv: [dokku, "apps:create", "{{ vaultwarden_app }}"]
+  when: vaultwarden_app_exists.rc != 0
+  changed_when: true
+
+- name: Read Vaultwarden's database link
+  ansible.builtin.command:
+    argv: [dokku, "postgres:linked", "{{ vaultwarden_db_service }}", "{{ vaultwarden_app }}"]
+  register: vaultwarden_db_linked
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+# Before the first deploy: without DATABASE_URL, Vaultwarden would start on an SQLite file in /data.
+- name: Link the database to Vaultwarden
+  ansible.builtin.command:
+    argv: [dokku, --no-restart, "postgres:link", "{{ vaultwarden_db_service }}", "{{ vaultwarden_app }}"]
+  when: vaultwarden_db_linked.rc != 0
+  changed_when: true
+  register: vaultwarden_db_link
+
+- name: Create Vaultwarden's data directory
+  ansible.builtin.file:
+    path: "{{ vaultwarden_storage_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Read Vaultwarden's storage mounts
+  ansible.builtin.command:
+    argv: [dokku, "storage:list", "{{ vaultwarden_app }}"]
+  register: vaultwarden_mounts
+  changed_when: false
+  check_mode: false
+
+- name: Mount Vaultwarden's data
+  ansible.builtin.command:
+    argv: [dokku, "storage:mount", "{{ vaultwarden_app }}", "{{ vaultwarden_storage_dir }}:/data"]
+  when: (vaultwarden_storage_dir ~ ':/data') not in vaultwarden_mounts.stdout
+  changed_when: true
+  register: vaultwarden_mount
+
+# Before ports: on an undeployed app, domains:set clears the port mapping.
+- name: Read Vaultwarden's domains
+  ansible.builtin.command:
+    argv: [dokku, "domains:report", "{{ vaultwarden_app }}", --domains-app-vhosts]
+  register: vaultwarden_vhosts
+  changed_when: false
+  check_mode: false
+
+- name: Set Vaultwarden's domain
+  ansible.builtin.command:
+    argv: [dokku, "domains:set", "{{ vaultwarden_app }}", "{{ vaultwarden_domain }}"]
+  when: vaultwarden_vhosts.stdout != vaultwarden_domain
+  changed_when: true
+
+- name: Read Vaultwarden's ports
+  ansible.builtin.command:
+    argv: [dokku, "ports:report", "{{ vaultwarden_app }}", --ports-map]
+  register: vaultwarden_ports
+  changed_when: false
+  check_mode: false
+
+# ports:add, never ports:set: set would drop the https mapping Let's Encrypt adds.
+- name: Route Vaultwarden's port
+  ansible.builtin.command:
+    argv: [dokku, "ports:add", "{{ vaultwarden_app }}", "http:80:80"]
+  when: "'http:80:80' not in vaultwarden_ports.stdout.split()"
+  changed_when: true
+
+- name: Read Vaultwarden's config
+  ansible.builtin.command:
+    argv: [dokku, "config:export", "{{ vaultwarden_app }}", --format, json]
+  register: vaultwarden_config
+  changed_when: false
+  check_mode: false
+  no_log: true
+
+- name: Set Vaultwarden's config
+  ansible.builtin.command:
+    argv: "{{ ['dokku', 'config:set', '--no-restart', '--encoded', vaultwarden_app] + vaultwarden_config_changes }}"
+  vars:
+    vaultwarden_config_current: "{{ vaultwarden_config.stdout | from_json }}"
+    vaultwarden_config_wanted:
+      DOMAIN: https://{{ vaultwarden_domain }}
+      SIGNUPS_ALLOWED: "false"
+      INVITATIONS_ALLOWED: "false"
+      SHOW_PASSWORD_HINT: "false"
+    vaultwarden_config_changes: >-
+      {%- set changes = [] -%}
+      {%- for key, value in vaultwarden_config_wanted.items() if vaultwarden_config_current.get(key) != value -%}
+      {%- set _ = changes.append(key ~ '=' ~ (value | b64encode)) -%}
+      {%- endfor -%}
+      {{ changes }}
+  when: vaultwarden_config_changes | length > 0
+  changed_when: true
+  register: vaultwarden_config_set
+  no_log: true
+
+- name: Read Vaultwarden's image
+  ansible.builtin.command:
+    argv: [dokku, "git:report", "{{ vaultwarden_app }}", --git-source-image]
+  register: vaultwarden_source_image
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read whether Vaultwarden is deployed
+  ansible.builtin.command:
+    argv: [dokku, "ps:report", "{{ vaultwarden_app }}", --deployed]
+  register: vaultwarden_deployed
+  changed_when: false
+  check_mode: false
+
+# Deploy whenever the app isn't running, not only on a new tag: git:from-image records the tag before it deploys.
+- name: Deploy Vaultwarden
+  when: vaultwarden_source_image.stdout != vaultwarden_image or vaultwarden_deployed.stdout != 'true'
+  block:
+    # git:from-image over a Dockerfile: the upstream tag is the only version pin, so there's no Dockerfile to maintain.
+    - name: Deploy Vaultwarden's image
+      ansible.builtin.command:
+        argv: [dokku, "git:from-image", "{{ vaultwarden_app }}", "{{ vaultwarden_image }}"]
+      register: vaultwarden_deploy
+      changed_when: vaultwarden_deploy.rc == 0
+      failed_when: vaultwarden_deploy.rc != 0 and 'No changes detected' not in vaultwarden_deploy.stderr ~ vaultwarden_deploy.stdout
+
+    - name: Deploy Vaultwarden's existing source
+      ansible.builtin.command:
+        argv: [dokku, "ps:rebuild", "{{ vaultwarden_app }}"]
+      when: vaultwarden_deploy.rc != 0
+      changed_when: true
+
+  rescue:
+    - name: Forget the image that failed to deploy, so the next run retries it
+      ansible.builtin.command:
+        argv: [dokku, "git:set", "{{ vaultwarden_app }}", source-image]
+      changed_when: true
+
+    - name: Stop after the failed deploy
+      ansible.builtin.fail:
+        msg: >-
+          Deploying {{ vaultwarden_image }} failed, see the output above.
+          If a version was already deployed, it keeps running. Fix the cause and run the playbook again.
+
+- name: Restart Vaultwarden to apply its settings
+  ansible.builtin.command:
+    argv: [dokku, "ps:restart", "{{ vaultwarden_app }}"]
+  when: >-
+    vaultwarden_deploy is skipped
+    and (vaultwarden_db_link is changed or vaultwarden_mount is changed or vaultwarden_config_set is changed)
+  changed_when: true

@@ -1,0 +1,4 @@
+---
+vaultwarden_app: vaultwarden
+vaultwarden_db_service: "{{ vaultwarden_app }}-db"
+vaultwarden_version: "1.37.4"
