@@ -8,3 +8,5 @@
     - name: Run preflight checks
       ansible.builtin.import_tasks: tasks/preflight.yml
       tags: always
+  roles:
+    - { role: vaultwarden, tags: vaultwarden }

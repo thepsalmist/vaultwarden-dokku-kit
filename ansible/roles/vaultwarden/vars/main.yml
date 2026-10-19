@@ -1,0 +1,4 @@
+---
+# Not a setting: pointing /data at another directory would start the vault with no attachments and no signing key.
+vaultwarden_storage_dir: /var/lib/dokku/data/storage/{{ vaultwarden_app }}
+vaultwarden_image: vaultwarden/server:{{ vaultwarden_version }}
