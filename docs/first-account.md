@@ -15,7 +15,7 @@ sudo docker run --rm -it vaultwarden/server:1.37.4 /vaultwarden hash
 It asks for the password twice and prints a line starting with `$argon2id$`. Put that line in `ansible/group_vars/all.yml`, in single quotes:
 
 ```yaml
-vaultwarden_admin_token: '$argon2id$v=19$m=65540,t=3,p=4$...'
+vaultwarden_admin_token: '$argon2id$...'
 ```
 
 Run the playbook. It sets `ADMIN_TOKEN` and restarts the app.
