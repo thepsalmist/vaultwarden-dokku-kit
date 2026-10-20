@@ -24,6 +24,8 @@ Run from this directory, so `ansible.cfg` applies:
 ansible-playbook vaultwarden.yml
 ```
 
+After the first run, create your account by following [docs/first-account.md](../docs/first-account.md).
+
 A second run should report `changed=0`. `--check` isn't useful here. Every change goes through a `dokku` command, which Ansible skips under `--check`. On a deployed host a check run reports `changed=0` even when something has drifted, and before the first deploy it fails, because the app doesn't exist yet. Use a normal run: it only changes what differs.
 
 ## What the playbook does
@@ -34,7 +36,7 @@ Each step reads Dokku's current state first and only changes what differs:
 2. Links the database to the app, which sets `DATABASE_URL`. This always happens before the first deploy, so Vaultwarden never starts on a stray SQLite file.
 3. Creates `/var/lib/dokku/data/storage/vaultwarden` (root-only, `0700`) and mounts it at `/data`. That directory holds attachments, Sends, the icon cache and the key that signs login tokens. Losing it logs every client out and loses every attachment.
 4. Sets the app's domain to `vaultwarden_domain` and routes port 80 to the container.
-5. Sets Vaultwarden's config: `DOMAIN`, `SIGNUPS_ALLOWED=false`, `INVITATIONS_ALLOWED=false` and `SHOW_PASSWORD_HINT=false`. A value changed by hand on the server is set back on the next run.
+5. Sets Vaultwarden's config: `DOMAIN`, `SIGNUPS_ALLOWED=false`, `INVITATIONS_ALLOWED=false`, `SHOW_PASSWORD_HINT=false`, and `ADMIN_TOKEN` when `vaultwarden_admin_token` is set. A value changed by hand on the server is set back on the next run.
 6. Deploys `vaultwarden/server:<vaultwarden_version>` whenever that version isn't the one running. Otherwise it restarts the app once if the database link, the mount or the config had to be fixed.
 7. Turns on HTTPS with a Let's Encrypt certificate, if it isn't on yet. Dokku then redirects plain HTTP to HTTPS.
 
@@ -68,6 +70,7 @@ Set these in `group_vars/all.yml`.
 |---|---|---|
 | `admin_user` | required | Sudo admin Ansible connects as |
 | `vaultwarden_domain` | required | The vault's hostname, without `https://` |
+| `vaultwarden_admin_token` | unset | Argon2 hash of the `/admin` password. Unset keeps `/admin` off. See [docs/first-account.md](../docs/first-account.md) |
 | `vaultwarden_version` | `1.37.4` | `vaultwarden/server` image tag. Bump it to upgrade |
 | `vaultwarden_app` | `vaultwarden` | Dokku app name. Change it to run a separate test copy |
 | `vaultwarden_db_service` | `<vaultwarden_app>-db` | PostgreSQL service name |
