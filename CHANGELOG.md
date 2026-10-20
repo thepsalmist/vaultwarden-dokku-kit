@@ -11,6 +11,7 @@ All notable changes to this project are listed here. The format follows
 - Ansible playbook with example inventory and variables, and preflight checks that stop before changing the host when it isn't Ubuntu 22.04/24.04, Dokku or its `postgres`/`letsencrypt` plugins are missing, Let's Encrypt has no global email, or `vaultwarden_domain` isn't set.
 - `scripts/check-prereqs.sh`, which checks the workstation has `ansible-playbook`, `ssh` and `git`.
 - `vaultwarden` role: deploys `vaultwarden/server` 1.37.4 on Dokku with a linked PostgreSQL service, persistent `/data`, the vault's domain, and closed registration. Re-runs change only what drifted.
+- HTTPS through Let's Encrypt. The certificate is requested once, and only after checking that the domain's DNS points at the host. Each run then checks that plain HTTP redirects to HTTPS and that `/alive` answers over HTTPS. Renewal is left to the letsencrypt plugin's cron job.
 
 ### Changed
 
