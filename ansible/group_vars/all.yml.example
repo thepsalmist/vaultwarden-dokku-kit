@@ -6,3 +6,7 @@ admin_user: deploy
 
 # The vault's hostname, without https://. Its DNS record must point at the host.
 vaultwarden_domain: vault.example.com
+
+# Argon2 hash of the /admin password, in single quotes. /admin stays off while this is unset.
+# See docs/first-account.md.
+# vaultwarden_admin_token: '$argon2id$v=19$m=65540,t=3,p=4$...'

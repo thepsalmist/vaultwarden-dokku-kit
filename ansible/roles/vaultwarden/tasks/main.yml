@@ -111,9 +111,10 @@
       SIGNUPS_ALLOWED: "false"
       INVITATIONS_ALLOWED: "false"
       SHOW_PASSWORD_HINT: "false"
+    vaultwarden_config_admin: "{{ {'ADMIN_TOKEN': vaultwarden_admin_token} if vaultwarden_admin_token is defined else {} }}"
     vaultwarden_config_changes: >-
       {%- set changes = [] -%}
-      {%- for key, value in vaultwarden_config_wanted.items() if vaultwarden_config_current.get(key) != value -%}
+      {%- for key, value in (vaultwarden_config_wanted | combine(vaultwarden_config_admin)).items() if vaultwarden_config_current.get(key) != value -%}
       {%- set _ = changes.append(key ~ '=' ~ (value | b64encode)) -%}
       {%- endfor -%}
       {{ changes }}
