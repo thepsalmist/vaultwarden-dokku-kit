@@ -36,8 +36,7 @@ Each step reads Dokku's current state first and only changes what differs:
 4. Sets the app's domain to `vaultwarden_domain` and routes port 80 to the container.
 5. Sets Vaultwarden's config: `DOMAIN`, `SIGNUPS_ALLOWED=false`, `INVITATIONS_ALLOWED=false` and `SHOW_PASSWORD_HINT=false`. A value changed by hand on the server is set back on the next run.
 6. Deploys `vaultwarden/server:<vaultwarden_version>` whenever that version isn't the one running. Otherwise it restarts the app once if the database link, the mount or the config had to be fixed.
-7. Turns on HTTPS with a Let's Encrypt certificate, if it isn't on yet. Before requesting the certificate, it checks that every address `vaultwarden_domain` resolves to belongs to the host. If one doesn't, it stops with a DNS message and requests nothing, so a wrong record never uses up Let's Encrypt's rate limits. With HTTPS on, Dokku redirects plain HTTP to HTTPS.
-8. Checks from your workstation that `http://<vaultwarden_domain>` redirects to HTTPS and that `https://<vaultwarden_domain>/alive` answers with a valid certificate.
+7. Turns on HTTPS with a Let's Encrypt certificate, if it isn't on yet. Dokku then redirects plain HTTP to HTTPS.
 
 If a deploy fails, the version that was already running keeps running, and the next run tries again.
 
@@ -45,14 +44,21 @@ It never publishes the database port.
 
 ## HTTPS
 
-The certificate is requested once. Later runs leave it alone while it's valid. The letsencrypt plugin's daily cron job renews it, and ansible-server-bootstrap adds that job, so the playbook doesn't add another. On a host prepared some other way, check the job is there and add it once if it isn't:
+The domain's DNS record must point at the host before the first run, or the certificate request fails.
+
+The certificate is requested once. The letsencrypt plugin's daily cron job renews it. ansible-server-bootstrap adds that job. On a host prepared some other way, check it's there and add it if it isn't:
 
 ```bash
 sudo dokku letsencrypt:cron-job          # shows whether it's enabled
 sudo dokku letsencrypt:cron-job --add
 ```
 
-The DNS check fails if your DNS provider proxies the record, for example Cloudflare with the proxy turned on, because the domain then resolves to the proxy. Set the record to DNS only.
+To confirm HTTPS works:
+
+```bash
+curl -sI http://vault.example.com          # 301 to https://vault.example.com
+curl -s https://vault.example.com/alive    # succeeds, with a valid certificate
+```
 
 ## Variables
 

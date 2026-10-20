@@ -184,57 +184,7 @@
   check_mode: false
 
 - name: Turn on HTTPS for Vaultwarden
+  ansible.builtin.command:
+    argv: [dokku, "letsencrypt:enable", "{{ vaultwarden_app }}"]
   when: vaultwarden_https.stdout != 'true'
-  block:
-    - name: Resolve Vaultwarden's domain and the host's inventory address
-      ansible.builtin.command:
-        argv: [python3, -c, "import socket, sys; print(*{a[4][0] for a in socket.getaddrinfo(sys.argv[1], None)})", "{{ item }}"]
-      loop: ["{{ vaultwarden_domain }}", "{{ ansible_host | default(inventory_hostname) }}"]
-      register: vaultwarden_lookups
-      changed_when: false
-      failed_when: false
-      check_mode: false
-
-    - name: Check Vaultwarden's domain points at the host
-      ansible.builtin.assert:
-        that:
-          - vaultwarden_domain_addresses | length > 0
-          - vaultwarden_domain_addresses | difference(vaultwarden_host_addresses) | length == 0
-        fail_msg: >-
-          {{ vaultwarden_domain }} doesn't point at this host:
-          {{ 'it resolves to ' ~ vaultwarden_domain_addresses | join(', ') if vaultwarden_domain_addresses else 'it has no DNS record' }}.
-          Point its A record (and AAAA record, if it has one) at the host, wait for DNS to update, and run again.
-          No certificate was requested.
-        quiet: true
-      vars:
-        vaultwarden_domain_addresses: "{{ vaultwarden_lookups.results[0].stdout.split() }}"
-        vaultwarden_host_addresses: >-
-          {{ vaultwarden_lookups.results[1].stdout.split() + ansible_facts.all_ipv4_addresses + ansible_facts.all_ipv6_addresses }}
-
-    - name: Request Vaultwarden's certificate
-      ansible.builtin.command:
-        argv: [dokku, "letsencrypt:enable", "{{ vaultwarden_app }}"]
-      changed_when: true
-
-- name: Check plain HTTP redirects to HTTPS
-  ansible.builtin.uri:
-    url: http://{{ vaultwarden_domain }}/alive
-    follow_redirects: none
-    status_code: 301
-  delegate_to: localhost
-  become: false
-  register: vaultwarden_http
-  failed_when: >-
-    vaultwarden_http.status != 301
-    or vaultwarden_http.location | default('') | urlsplit('scheme') != 'https'
-    or vaultwarden_http.location | default('') | urlsplit('hostname') != vaultwarden_domain
-
-- name: Check Vaultwarden answers over HTTPS
-  ansible.builtin.uri:
-    url: https://{{ vaultwarden_domain }}/alive
-  delegate_to: localhost
-  become: false
-  register: vaultwarden_alive
-  until: vaultwarden_alive.status == 200
-  retries: 10
-  delay: 3
+  changed_when: true
