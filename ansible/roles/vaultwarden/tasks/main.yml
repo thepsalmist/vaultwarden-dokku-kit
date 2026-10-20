@@ -186,7 +186,6 @@
 - name: Turn on HTTPS for Vaultwarden
   when: vaultwarden_https.stdout != 'true'
   block:
-    # Not getent: on a host without IPv6 it hides AAAA records, and Let's Encrypt still validates them.
     - name: Resolve Vaultwarden's domain and the host's inventory address
       ansible.builtin.command:
         argv: [python3, -c, "import socket, sys; print(*{a[4][0] for a in socket.getaddrinfo(sys.argv[1], None)})", "{{ item }}"]
@@ -196,7 +195,6 @@
       failed_when: false
       check_mode: false
 
-    # A failed request counts against Let's Encrypt's rate limits.
     - name: Check Vaultwarden's domain points at the host
       ansible.builtin.assert:
         that:
