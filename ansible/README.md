@@ -24,6 +24,12 @@ Run from this directory, so `ansible.cfg` applies:
 ansible-playbook vaultwarden.yml
 ```
 
+Check the deploy from the repo root:
+
+```bash
+scripts/smoke-test.sh vault.example.com
+```
+
 After the first run, create your account by following [docs/first-account.md](../docs/first-account.md).
 
 A second run should report `changed=0`. `--check` isn't useful here. Every change goes through a `dokku` command, which Ansible skips under `--check`. On a deployed host a check run reports `changed=0` even when something has drifted, and before the first deploy it fails, because the app doesn't exist yet. Use a normal run: it only changes what differs.
@@ -55,12 +61,7 @@ sudo dokku letsencrypt:cron-job          # shows whether it's enabled
 sudo dokku letsencrypt:cron-job --add
 ```
 
-To confirm HTTPS works:
-
-```bash
-curl -sI http://vault.example.com          # 301 to https://vault.example.com
-curl -s https://vault.example.com/alive    # succeeds, with a valid certificate
-```
+`scripts/smoke-test.sh` checks the redirect and the certificate, along with the rest of the deploy.
 
 ## Variables
 
