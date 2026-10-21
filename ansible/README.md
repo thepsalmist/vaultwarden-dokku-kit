@@ -95,9 +95,7 @@ Dokku keeps a small storage record for the removed directory. It's harmless, and
 
 ## Upgrading
 
-Read the [release notes](https://github.com/dani-garcia/vaultwarden/releases) for every version between yours and the target. Then bump `vaultwarden_version` and run the playbook.
-
-Vaultwarden updates its database when the new version starts, and that can't be undone. Back up the database and `/data` before upgrading, so you can roll back.
+Follow [docs/upgrading.md](../docs/upgrading.md). It backs up the database and `/data` first, because Vaultwarden's database changes can't be undone, and covers rolling back.
 
 ## Preflight
 

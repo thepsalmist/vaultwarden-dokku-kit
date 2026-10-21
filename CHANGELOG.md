@@ -13,6 +13,7 @@ All notable changes to this project are listed here. The format follows
 - `vaultwarden` role: deploys `vaultwarden/server` 1.37.4 on Dokku with a linked PostgreSQL service, persistent `/data`, the vault's domain, and closed registration. Re-runs change only what drifted.
 - HTTPS through Let's Encrypt. The certificate is requested once, and the letsencrypt plugin's cron job renews it.
 - `vaultwarden_admin_token` turns on `/admin`, and `docs/first-account.md` covers inviting the first account from it while registration stays closed.
+- `docs/upgrading.md`: back up before upgrading, upgrade, and roll back by restoring into a recreated database.
 
 ### Changed
 
